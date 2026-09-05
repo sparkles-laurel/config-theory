@@ -1,0 +1,98 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{tikz}
+\usepackage{amsmath, amssymb, amsthm}
+\usepackage[most]{tcolorbox}
+\usepackage{xcolor}
+\usepackage{microtype}
+
+\definecolor{defbg}{RGB}{255, 251, 230}
+\definecolor{defborder}{RGB}{230,200,100}
+\definecolor{theorembg}{RGB}{230, 251, 255}
+\definecolor{theoremborder}{RGB}{100, 200, 230}
+
+\title{Configuration Theory}
+\author{Kıvılcım İpek Afet Öztürk}
+\date{3 September 2026}
+
+\begin{document}
+\include{util}
+\maketitle
+
+\section{Introduction}
+This is a boring paper about how computer systems are configured and how these configurations are shared across clusters of computers.
+\\\\
+As a very fundamental definition for this paper, we need to define a subset of functions.
+
+\definitionbox{1.1}{\textit{finite function}} {
+Let $f: D \to C$ be a function. If $\left|f\right| < \infty$, $f$ is called a \textit{finite function}. 
+}
+
+\section{A mathematical model of configuration: dictionaries}
+First, we need to take a look at dictionaries, which are the most elementary units of computer configuration.
+\definitionbox{2.1}{\textit{dictionary}, \textit{key}, \textit{value}, $\mathcal{K}$, $\mathcal{V}$}{
+A \textit{dictionary} is a finite function $f: \mathcal{K} \to \mathcal{V}$ described explicitly by its graph $f = \left\{\left(k_n, v_n\right)\mid \forall{n}\in\mathbb{N}, \left(k_n, v_n\right)\in{\mathcal{K}\times\mathcal{V}}\right\}$.\\\\
+
+Each member of the domain of $f$ is called a \textit{key} of the dictionary.\\
+Each member of the codomain of $f$ is called a \textit{value} of the dictionary.\\\\
+
+For the rest of this paper the set of all possible keys a dictionary can have will be denoted as $\mathcal{K}$.\\
+For the rest of this paper the set of all possible values a dictionary key may have will be denoted as $\mathcal{V}$.
+}
+
+Dictionaries on their own are boring structures, so we need to bring up a few more concepts to make them useful.
+\definitionbox{2.2}{\textit{set of software configuration files}, $\mathcal{S}_f$}{
+A \textit{set of software configuration files} is a set of files residing in a filesystem that describe the configuration of one instance of software. The parsed set of these configuration files represented as a set of dictionaries, one for each file, is denoted $\mathcal{S}_f$.
+}
+
+By knowing these two definitions, we can move on to defining what a configuration means:
+\definitionbox{2.3}{\textit{configuration}, $C$}{
+    A \textit{configuration} $C$ is the union of a set of software configuration files $S_f$ whose dictionary domains are pairwise disjoint.
+    $$C = \bigcup_{f\in S_f} f \,\,\text{where}\,\, \forall{f_i, f_j}\in{S_f} \left(i \neq j \implies \text{Dom}\left(f_i\right)\cap\text{Dom}\left(f_j\right) = \varnothing \right)$$ 
+}
+\
+\section{Describing many pieces of configuration: states}
+A computer system may have more than one piece of configuration, because our definitions in \textbf{2.2} and \textbf{2.3} are used for describing configuration for \textit{one} piece of software. A typical computer has more than one pieces of software installed on it. We refer to the whole configuration of a computer as a \textit{state}, which will be our next definition.
+\definitionbox{3.1}{state, $\mathcal{S}$}{
+    A \textit{state} $\mathcal{S}$ is a set of multiple configurations. States are often denoted as $\mathcal{S}$ and multiple states are denoted with indices below them, such as $\mathcal{S}_1, \mathcal{S}_2, \dots$
+
+    $$\mathcal{S} = \bigcup_{n = 1}^{\left|\mathcal{S}\right|}\left\{C_i\right\}$$
+}
+
+For any declarative configuration system; we generally talk about two states: one of them is the desired state of the system, and the other one is the existing state of the system.
+
+\definitionbox{3.2}{desired state, $\mathcal{S_\text{d}}$, $\mathcal{S}$}{
+    The intended state of a computer system described by a declarative configuration subsystem is called the \textit{desired state}. Desired state is denoted as $\mathcal{S_\text{d}}$ which is shortened as $\mathcal{S}$ in this paper. 
+}
+\definitionbox{3.3}{existing state, $\mathcal{S}_\text{ex}$, $\mathcal{E}$}{
+    The present state of a computer system described by its configuration files is called the \textit{existing state}. The state is denoted as $\mathcal{S}_\text{ex}$ which is shortened as $\mathcal{E}$ in this paper.
+}
+
+\subsection{Methods of comparing states}
+Comparing the states is specifically useful when it comes to describing the drift-away of a system from its ideal. States can be compared by a number of different formulas, but this paper will make use of only two of them: set difference between $\mathcal{S}$ and $\mathcal{E}$ and the difference between modification times of the two states.
+\definitionbox{3.4}{modification time, $\operatorname{mtime}$}{
+    The \textit{modification time} of a configuration file is the last time the configuration file was written to.
+    The last write to a configuration file $f$ is denoted as $\mathit{mtime}\,f$. \\\\
+    For a configuration $C$, $\operatorname{mtime}C$ is defined as follows:
+    $$\operatorname{mtime}C = \max \left\{\operatorname{mtime}f\mid f \subset C\right\}$$
+}
+
+\definitionbox{3.5}{symmetric delta, $\operatorname{\Delta}$}{
+    For any sets $A$ and $B$, the \textit{symmetric delta} between the two sets is defined as:
+    $$A \operatorname{\Delta} B = \left(A\setminus{B}\right)\cup\left(B\setminus{A}\right)$$
+}
+
+\definitionbox{3.6}{behind, ahead of, $<$, $>$, drift-away}{
+    Let $S_1$ and $S_2$ be two states.\\
+    If $\operatorname{mtime}{S_1} < \operatorname{mtime}{S_2}$, $S_1$ is said to be \textit{behind} $S_2$. This is denoted as $S_1 < S_2$ and read as \textit{$S_1$ is behind $S_2$}. \\
+    If $\operatorname{mtime}{S_1} > \operatorname{mtime}{S_2}$, $S_1$ is said to be \textit{ahead of} $S_2$. This is denoted as $S_1 > S_2$ and read as \textit{$S_1$ is ahead of $S_2$}.
+
+    The condition of states being behind or ahead of each other is called \textit{drift-away}. 
+}
+\theorembox{3.7}{existence of a symmetric delta implies drift away}{
+    Let $\mathcal{D} = \mathcal{S}\operatorname{\Delta}\mathcal{E}$. If $\mathcal{D} \neq \varnothing$, then $\mathcal{S}$ and $\mathcal{E}$ drift away from each other. 
+}
+\begin{proof}
+    
+\end{proof}
+\end{document}
